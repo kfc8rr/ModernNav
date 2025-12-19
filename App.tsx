@@ -522,10 +522,10 @@ const App: React.FC = () => {
           isDark ? 'text-white/30 border-white/5 bg-black/10' : 'text-slate-500 border-black/5 bg-white/20'
       }`}>
         <div className="flex gap-4">
-          <a href="https://math.nyc.mn" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors">
+          <a href="https://nav.iddogs.dpdns.org/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors">
             <LinkIcon size={12}/> {t('friendly_links')}
           </a>
-          <a href="https://github.com/lyan0220" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors">
+          <a href="https://github.com/kfc8rr" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors">
             <Github size={12}/> {t('about_us')}
           </a>
         </div>
