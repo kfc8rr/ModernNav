@@ -491,7 +491,7 @@ const App: React.FC = () => {
                      themeMode={themeMode}
                      onClick={() => window.open(link.url, '_blank')}
                      className="h-24 flex flex-col items-center justify-center text-center p-2 relative group" 
-                     title={link.description || `${link.title}\n${link.url}`}
+                     title={link.description ? `${link.description}\n${link.url}` : `${link.title}\n${link.url}`}
                    >
                      <div className={`mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] flex items-center justify-center h-6 w-6 ${isDark ? 'text-white/90' : 'text-slate-700'}`}>
                        {renderIcon(link.icon)}

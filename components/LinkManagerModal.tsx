@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Plus, Trash2, GripVertical, Download, Upload, Save, AlertCircle, Lock, Shield, Key, Eye, EyeOff, LogIn, Pencil, Search, LayoutGrid, Database, ShieldCheck, FolderPlus, Folder, Image as ImageIcon, RotateCcw, Sliders, LogOut, Loader2, Link as LinkIcon, Smile, ChevronRight } from 'lucide-react';
+import { X, Plus, Trash2, GripVertical, Download, Upload, Save, AlertCircle, Lock, Shield, Key, Eye, EyeOff, LogIn, Pencil, Search, LayoutGrid, Database, ShieldCheck, FolderPlus, Folder, Image as ImageIcon, RotateCcw, Sliders, LogOut, Loader2, Link as LinkIcon, Smile, ChevronRight, ChevronDown } from 'lucide-react';
 import { Category, LinkItem, SubCategory } from '../types';
 import * as Icons from 'lucide-react';
 import { storageService, DEFAULT_BACKGROUND } from '../services/storage';
@@ -56,6 +56,7 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
   const [activeTab, setActiveTab] = useState<'content' | 'appearance' | 'data' | 'security'>('content');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedSubMenus, setCollapsedSubMenus] = useState<Set<string>>(new Set());
   
   // --- Category States ---
   const [newCategoryTitle, setNewCategoryTitle] = useState('');
@@ -202,12 +203,6 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
     setIsAuthenticated(false);
   };
 
-  // ... (Rest of the component logic remains identical, just rendering JSX) ...
-  // [Due to file length limits, only showing changed logic. The rest is standard React UI]
-
-  // ... (Standard Render Methods for Categories, Links, DragDrop, etc.) ...
-  // Re-implementing them briefly to ensure file integrity in response
-
   const handleAddCategory = () => {
     if (!newCategoryTitle.trim()) return;
     const newCat: Category = {
@@ -336,6 +331,16 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
     } : c));
     setEditingSubMenuId(null);
   };
+  
+  const toggleSubMenu = (subId: string) => {
+    const newSet = new Set(collapsedSubMenus);
+    if (newSet.has(subId)) {
+      newSet.delete(subId);
+    } else {
+      newSet.add(subId);
+    }
+    setCollapsedSubMenus(newSet);
+  };
 
   const openAddLink = (subId: string) => {
     setTargetSubMenuId(subId);
@@ -343,6 +348,11 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
     setLinkFormData({ title: '', url: '', description: '', icon: '', subCategoryId: subId });
     setIconSearch('');
     setShowIconPicker(false);
+    
+    // Auto expand if trying to add link
+    const newCollapsed = new Set(collapsedSubMenus);
+    newCollapsed.delete(subId);
+    setCollapsedSubMenus(newCollapsed);
   };
 
   const openEditLink = (subId: string, item: LinkItem) => {
@@ -747,59 +757,72 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                           categories.find(c => c.id === selectedCategoryId)?.subCategories.map(sub => {
                             const filteredItems = sub.items.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.url.toLowerCase().includes(searchQuery.toLowerCase()));
                             if (searchQuery && filteredItems.length === 0) return null;
+                            const isCollapsed = collapsedSubMenus.has(sub.id);
+                            
                             return (
-                              <div key={sub.id} className="bg-slate-800/40 border border-white/[0.08] rounded-xl overflow-visible shadow-sm">
-                                <div className="flex items-center justify-between p-4 border-b border-white/[0.08] bg-white/[0.02]">
+                              <div key={sub.id} className="bg-slate-800/40 border border-white/[0.08] rounded-xl overflow-hidden shadow-sm transition-all duration-300">
+                                <div 
+                                  className="flex items-center justify-between p-4 border-b border-white/[0.08] bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-colors group/header"
+                                  onClick={() => toggleSubMenu(sub.id)}
+                                >
                                   <div className="flex items-center gap-3">
+                                    <ChevronDown 
+                                      size={16} 
+                                      className={`text-slate-500 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} 
+                                    />
                                     {editingSubMenuId === sub.id ? (
-                                      <input autoFocus className="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none" value={editSubMenuTitle} onChange={e => setEditSubMenuTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUpdateSubMenuTitle(sub.id)} onBlur={() => handleUpdateSubMenuTitle(sub.id)} />
+                                      <input autoFocus className="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none" value={editSubMenuTitle} onClick={e => e.stopPropagation()} onChange={e => setEditSubMenuTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleUpdateSubMenuTitle(sub.id)} onBlur={() => handleUpdateSubMenuTitle(sub.id)} />
                                     ) : (
                                       <h4 className="font-bold text-white/90 text-sm flex items-center gap-2 tracking-tight"><Folder size={14} className="text-[var(--theme-light)]"/>{sub.title}</h4>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <button onClick={() => { setEditingSubMenuId(sub.id); setEditSubMenuTitle(sub.title); }} className="p-1 text-slate-500 hover:text-white transition-colors"><Pencil size={13}/></button>
-                                    <button onClick={() => handleDeleteSubMenu(sub.id, sub.title)} className="p-1 text-slate-500 hover:text-red-400 transition-colors"><Trash2 size={13}/></button>
+                                  <div className="flex items-center gap-2 opacity-100 sm:opacity-60 sm:group-hover/header:opacity-100 transition-opacity">
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingSubMenuId(sub.id); setEditSubMenuTitle(sub.title); }} className="p-1.5 text-slate-500 hover:text-white transition-colors bg-white/5 rounded-md hover:bg-white/10"><Pencil size={13}/></button>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteSubMenu(sub.id, sub.title); }} className="p-1.5 text-slate-500 hover:text-red-400 transition-colors bg-white/5 rounded-md hover:bg-white/10"><Trash2 size={13}/></button>
                                     <div className="w-px h-3 bg-white/[0.08] mx-1"></div>
-                                    <button onClick={() => openAddLink(sub.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-colors ${targetSubMenuId === sub.id && !editingLinkId ? 'bg-[var(--theme-primary)] text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
+                                    <button onClick={(e) => { e.stopPropagation(); openAddLink(sub.id); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-colors ${targetSubMenuId === sub.id && !editingLinkId ? 'bg-[var(--theme-primary)] text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
                                       <Plus size={12}/> {t('add_new_link')}
                                     </button>
                                   </div>
                                 </div>
-                                {targetSubMenuId === sub.id && renderLinkForm()}
-                                <div className="p-2 space-y-1">
-                                  {filteredItems.length === 0 ? (
-                                    <div className="p-6 text-center text-slate-600 text-xs italic tracking-wider">{searchQuery ? t('no_links_search') : t('no_links')}</div>
-                                  ) : (
-                                    filteredItems.map((item, index) => (
-                                      <div 
-                                        key={item.id} 
-                                        draggable={!isAnyEditing}
-                                        onDragStart={(e) => handleDragStartLink(e, sub.id, index)}
-                                        onDragEnter={() => handleDragEnterLink(sub.id, index)}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onDragEnd={resetDragState}
-                                        onDrop={(e) => handleDropLink(e, sub.id, index)}
-                                        className={`group flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] transition-all border border-transparent hover:border-white/[0.04] ${draggedLink?.subId === sub.id && draggedLink?.index === index ? 'opacity-40 border-dashed border-white/20' : ''} ${dragOverLink?.subId === sub.id && dragOverLink?.index === index && draggedLink?.index !== index ? 'ring-2 ring-[var(--theme-primary)] bg-[var(--theme-primary)]/10 scale-[1.02]' : ''}`}
-                                      >
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                          <GripVertical size={14} className={`shrink-0 ${isAnyEditing ? 'text-slate-800 cursor-not-allowed' : 'text-slate-700 group-hover:text-slate-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity'}`} />
-                                          <div className="w-8 h-8 rounded-lg bg-slate-900/50 flex items-center justify-center shrink-0 border border-white/[0.08] group-hover:border-[var(--theme-primary)]/30 transition-colors">
-                                            {renderIcon(item.icon)}
+                                {!isCollapsed && (
+                                  <div className="animate-fade-in origin-top">
+                                    {targetSubMenuId === sub.id && renderLinkForm()}
+                                    <div className="p-2 space-y-1">
+                                      {filteredItems.length === 0 ? (
+                                        <div className="p-6 text-center text-slate-600 text-xs italic tracking-wider">{searchQuery ? t('no_links_search') : t('no_links')}</div>
+                                      ) : (
+                                        filteredItems.map((item, index) => (
+                                          <div 
+                                            key={item.id} 
+                                            draggable={!isAnyEditing}
+                                            onDragStart={(e) => handleDragStartLink(e, sub.id, index)}
+                                            onDragEnter={() => handleDragEnterLink(sub.id, index)}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDragEnd={resetDragState}
+                                            onDrop={(e) => handleDropLink(e, sub.id, index)}
+                                            className={`group flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] transition-all border border-transparent hover:border-white/[0.04] ${draggedLink?.subId === sub.id && draggedLink?.index === index ? 'opacity-40 border-dashed border-white/20' : ''} ${dragOverLink?.subId === sub.id && dragOverLink?.index === index && draggedLink?.index !== index ? 'ring-2 ring-[var(--theme-primary)] bg-[var(--theme-primary)]/10 scale-[1.02]' : ''}`}
+                                          >
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                              <GripVertical size={14} className={`shrink-0 ${isAnyEditing ? 'text-slate-800 cursor-not-allowed' : 'text-slate-700 group-hover:text-slate-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity'}`} />
+                                              <div className="w-8 h-8 rounded-lg bg-slate-900/50 flex items-center justify-center shrink-0 border border-white/[0.08] group-hover:border-[var(--theme-primary)]/30 transition-colors">
+                                                {renderIcon(item.icon)}
+                                              </div>
+                                              <div className="min-w-0">
+                                                <div className="text-sm font-semibold text-slate-200 truncate group-hover:text-white">{item.title}</div>
+                                                <div className="text-[10px] text-slate-500 truncate font-mono opacity-60">{item.url}</div>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity translate-x-1 group-hover:translate-x-0">
+                                              <button onClick={() => openEditLink(sub.id, item)} className="p-2 text-slate-500 hover:text-[var(--theme-light)] transition-colors"><Pencil size={13} /></button>
+                                              <button onClick={() => handleDeleteLink(sub.id, item.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
+                                            </div>
                                           </div>
-                                          <div className="min-w-0">
-                                            <div className="text-sm font-semibold text-slate-200 truncate group-hover:text-white">{item.title}</div>
-                                            <div className="text-[10px] text-slate-500 truncate font-mono opacity-60">{item.url}</div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity translate-x-1 group-hover:translate-x-0">
-                                          <button onClick={() => openEditLink(sub.id, item)} className="p-2 text-slate-500 hover:text-[var(--theme-light)] transition-colors"><Pencil size={13} /></button>
-                                          <button onClick={() => handleDeleteLink(sub.id, item.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
-                                        </div>
-                                      </div>
-                                    ))
-                                  )}
-                                </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             );
                           })
