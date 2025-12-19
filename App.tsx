@@ -535,7 +535,7 @@ const App: React.FC = () => {
             <span className="mx-2 opacity-50">|</span>
             <span className="opacity-80">{t('powered_by')}</span>
           </p>
-          <a href="https://github.com/lyan0220/ModernNav" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold hover:text-[var(--theme-primary)] transition-colors">Lyan</a>
+          <a href="https://github.com/kfc8rr/ModernNav" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold hover:text-[var(--theme-primary)] transition-colors">Lyan</a>
         </div>
       </footer>
 
